@@ -1,0 +1,27 @@
+{
+  "name": "voka",
+  "version": "0.1.0",
+  "description": "Reliable Pub-Sub borker using Redis and Nodejs",
+  "main": "src/voka.js",
+  "scripts": {
+    "test": "mocha --recursive spec/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:RobinQu/voka.git"
+  },
+  "keywords": [
+    "pub-sub",
+    "redis",
+    "nodejs"
+  ],
+  "author": "RobinQu",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RobinQu/voka/issues"
+  },
+  "homepage": "https://github.com/RobinQu/voka",
+  "dependencies": {
+    "redis": "^0.10.3"
+  }
+}
