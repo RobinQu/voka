@@ -66,7 +66,7 @@ voka.publisher({ delay: 5000 }, function() {
 });
 ```
 
-#### Wait to subscribers
+#### Wait for subscribers
 
 ```
 voka.publisher({ least: 4 }, function(e, pub) {
@@ -89,7 +89,7 @@ voka.publisher({ least: 4 }, function(e, pub) {
 });
 ```
 
-#### Heartbeat
+### Heartbeat
 
 Subscribers are required to send heartbeat to broadcast their existence.
 
@@ -111,7 +111,7 @@ pub.on("report", function(data) {
 
 ## Notes
 
-1. `hiredis` doesn't compile in node v0.11.x, so pure javascript implementation is used
+1. `hiredis` doesn't compile in node v0.11.x, so pure javascript implementation is used if you are running `v0.11.x`
 2. For back-compatibilities, traditional promise-based style is used
 
 ## License 
