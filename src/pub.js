@@ -27,15 +27,17 @@ Publisher.prototype.bootstrap = function (callback) {
   debug("bootstrap");
   var self = this;
   this.connect().then(function() {
-    self.domain.run(function() {
-      if(callback) {
-        callback(null, self);
-      }
-    });
+    if(callback) {
+      callback(null, self);
+    }
     process.nextTick(function() {
       self.checkSubscribers();
     });
-  }).catch(this.domain.intercept(callback));
+  }).catch(function(e) {
+    if(callback) {
+      callback(e);
+    }
+  });
 };
 
 Publisher.prototype.incrementMessageID = function (channel) {

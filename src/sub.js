@@ -32,17 +32,21 @@ Subscriber.prototype.bootstrap = function (callback) {
   var self = this;
   this.connect().then(function() {
     return self.register().then(function() {
-      self.domain.run(function() {
-        if(callback) {
-          callback(null, self);
-        }
-      });
+      // self.domain.run(function() {
+      if(callback) {
+        callback(null, self);
+      }
+      // });
       debug("start loop, interval %d", self.loopInterval);
       process.nextTick(function() {
         self.loop();
       });
     });
-  }).catch(this.domain.intercept(callback));
+  }).catch(function(e) {
+    if(callback) {
+      callback(e);
+    }
+  });
 };
 
 Subscriber.prototype.teardown = function (callback) {
@@ -89,11 +93,14 @@ Subscriber.prototype.handleMessage = function (channel, id) {
   var multi = this.client.multi(),
       self = this,
       key = this.keyForMessage(this.name, id);
-  multi.get(key).del(key).exec(this.domain.intercept(function(replies) {
+  multi.get(key).del(key).exec(function(e, replies) {
+    if(e) {
+      return self._error(e);
+    }
     debug("message got on channel '%s' with id %s", channel, id);
     var message = replies[0];
     self.emit(self.channel(channel), message);
-  }));
+  });
 };
 
 Subscriber.prototype.loop = function() {
@@ -109,8 +116,11 @@ Subscriber.prototype.loop = function() {
   }
   
   debug("query list %s", listKeys);
-  this.client.blpop(listKeys, this.loopInterval, this.domain.intercept(function() {
-    var args = Array.prototype.slice.call(arguments), 
+  this.client.blpop(listKeys, this.loopInterval, function(e) {
+    if(e) {
+      return self._error(e);
+    }
+    var args = Array.prototype.slice.call(arguments, 1), 
         i, len, channel;
       
     for(i=0,len=args.length; i<len; i++) {
@@ -118,7 +128,7 @@ Subscriber.prototype.loop = function() {
       self.handleMessage(channel, args[i][1]);
     }
     self.loop();
-  }));
+  });
   
 };
 

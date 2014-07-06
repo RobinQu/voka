@@ -1,5 +1,5 @@
 var debug = require("debug")("client"),
-    domain = require("domain"),
+    // domain = require("domain"),
     Q = require("q"),
     short = require("shortid"),
     redis = require("redis"),
@@ -14,14 +14,8 @@ var Client = function(options) {
   this.type = options.type || "client";
   this.namespace = (options.namespace || "voka").split(".");
   this.redisOpts = options.redis || {};
-  this.domain = options.domain || domain.create();
-  // console.log(this.domain);
   //IMPORTANT: timeout in seconds
-  this.timeout = (options.timeout / 1000) || 5;
-  // this.domain.on("error", function(e) {
-  //   debug(e);
-  // });
-  this.domain.add(this);
+  this.timeout = (options.timeout / 1000) || 6;
   this._error = this.emitError.bind(this);
   
 };
@@ -37,7 +31,7 @@ Client.prototype.connect = function () {
   ]).then(function(clients) {
     self.client = clients[0];
     self.heartbeatClient = clients[1];
-    self.startHeartbeat();
+    self.heartbeat();
   });
 };
 
@@ -52,6 +46,7 @@ Client.prototype.createClient = function (options) {
   client.once("error", function(e) {
     deferred.reject(e);
   });
+  client.on("error", this._error);
   return deferred.promise;
 };
 
@@ -94,25 +89,19 @@ Client.prototype.keyForHeartbeat = function (type, name) {
   return this.key("heartbeat", type || this.type, name || this.name);
 };
 
-Client.prototype.startHeartbeat = function () {
-  var self = this;
-  this.heartbeat().fin(function() {
-    setTimeout(self.startHeartbeat.bind(self), this.timeout * 1000 / 2);
-  }).catch(this._error);
-};
-
 Client.prototype.emitError = function (e) {
   this.emit("error", e);
 };
 
 Client.prototype.heartbeat = function () {
-  var i,len, multi, key, deferred;
+  var i,len, multi, key, deferred, self = this;
   deferred = Q.defer();
   multi = this.heartbeatClient.multi();
   key = this.keyForHeartbeat();
   multi.set(key, Date.now());
   multi.expire(key, this.timeout);
   multi.exec(function(e) {
+    setTimeout(self.heartbeat.bind(self), self.timeout * 1000 / 2);
     if(e) {
       return deferred.reject(e);
     }
