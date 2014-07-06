@@ -42,7 +42,8 @@ Publisher.prototype.bootstrap = function (callback) {
       self.teardown();
       process.exit();
     });
-    return Q.delay(self.timeout * 1000).self.checkSubscribers().then(function(data) {
+    //wait for `self.timeout` seconds to ensure all subscribers at least have sent one heartbeat
+    return Q.delay(self.timeout * 1000).then(self.checkSubscribers()).then(function(data) {
       self.loopCheck();
       return self.wait();
     });
