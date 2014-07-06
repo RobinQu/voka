@@ -15,7 +15,8 @@ var Client = function(options) {
   this.namespace = (options.namespace || "voka").split(".");
   this.redisOpts = options.redis || {};
   //IMPORTANT: timeout in seconds
-  this.timeout = (options.timeout / 1000) || 4;
+  this.timeout = (options.timeout / 1000) || 2;
+  this.heartbeatInterval = options.heartbeatInterval || 500;
   this._error = this.emitError.bind(this);
   
 };
@@ -101,7 +102,7 @@ Client.prototype.heartbeat = function () {
   multi.set(key, Date.now());
   multi.expire(key, this.timeout);
   multi.exec(function(e) {
-    setTimeout(self.heartbeat.bind(self), self.timeout * 1000 / 2);
+    setTimeout(self.heartbeat.bind(self), self.heartbeatInterval);
     if(e) {
       self._error(e);
       return deferred.reject(e);

@@ -42,7 +42,7 @@ Publisher.prototype.bootstrap = function (callback) {
       self.teardown();
       process.exit();
     });
-    return self.checkSubscribers().then(function(data) {
+    return Q.delay(self.timeout * 1000).self.checkSubscribers().then(function(data) {
       self.loopCheck();
       return self.wait();
     });
