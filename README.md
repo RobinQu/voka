@@ -91,7 +91,7 @@ voka.publisher({ least: 4 }, function(e, pub) {
 
 ### Heartbeat
 
-Subscribers are required to send heartbeat to broadcast their existence.
+Subscribers are required to send heartbeat to broadcast their existences.
 
 A publisher can report the changes:
 
@@ -99,7 +99,7 @@ A publisher can report the changes:
 pub.on("report", function(data) {
 
   data.livingList; //names of the connected subscribers
-  data.dropList; //names of disconnected subscribers after the last heartbeat
+  data.dropList; //names of disconnected subscribers since the last heartbeat
 
 });
 ```
@@ -107,7 +107,7 @@ pub.on("report", function(data) {
 ## Producer & consumer
 
 * multiple `subscirber`s can be assigned with an identical name for load balance
-* multiple `publisher`'s can be assigned with an identical name to more horsepower
+* multiple `publisher`'s can be assigned with an identical name for more horsepower
 
 ## Notes
 
