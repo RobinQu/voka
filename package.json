@@ -4,7 +4,7 @@
   "description": "Reliable Pub-Sub borker using Redis and Nodejs",
   "main": "src/voka.js",
   "scripts": {
-    "test": "mocha --recursive spec/"
+    "test": "NODE_ENV=test DEBUG=* mocha --recursive spec/"
   },
   "repository": {
     "type": "git",
@@ -24,6 +24,8 @@
   "dependencies": {
     "redis": "^0.10.3",
     "shortid": "^2.0.1",
-    "debug": "^1.0.2"
+    "debug": "^1.0.2",
+    "q": "^1.0.1",
+    "chai": "^1.9.1"
   }
 }
