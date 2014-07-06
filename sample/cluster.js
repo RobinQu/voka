@@ -2,7 +2,7 @@ var fs = require('fs');
 
 var cluster = require("cluster");
 
-var numsub = 5, i;
+var numsub = 2, i;
 
 if(cluster.isMaster) {
   // agent.metrics.startCpuProfiling();

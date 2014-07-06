@@ -15,7 +15,7 @@ var Client = function(options) {
   this.namespace = (options.namespace || "voka").split(".");
   this.redisOpts = options.redis || {};
   //IMPORTANT: timeout in seconds
-  this.timeout = (options.timeout / 1000) || 6;
+  this.timeout = (options.timeout / 1000) || 4;
   this._error = this.emitError.bind(this);
   
 };
@@ -103,6 +103,7 @@ Client.prototype.heartbeat = function () {
   multi.exec(function(e) {
     setTimeout(self.heartbeat.bind(self), self.timeout * 1000 / 2);
     if(e) {
+      self._error(e);
       return deferred.reject(e);
     }
     deferred.resolve();
@@ -111,12 +112,13 @@ Client.prototype.heartbeat = function () {
 };
 
 Client.prototype.liveCheck = function (type) {
+  debug("livecheck for %s", type);
   var key = this.keyForHeartbeat(type, "*"),
       multi = this.heartbeatClient.multi(),
       self = this,
       setKey = this.keyForTypeSet(type),
       deferred = Q.defer();
-  
+      
   multi.keys(key);
   multi.smembers(setKey);
   multi.exec(function(e, replies) {
@@ -125,34 +127,42 @@ Client.prototype.liveCheck = function (type) {
     }
     var keys = replies[0],
         members = replies[1],
-        dropList, names,
-        args = [setKey];
-    dropList = _.xor(keys, members.map(self.keyForHeartbeat.bind(self, type))).map(function(k) {
+        dropList, liveList,
+        args = [setKey],
+        data;
+
+    liveList = keys.map(function(k) {
       return k.split(".").pop();
     });
-    
-    debug("found timeouts %o", dropList);
-    if(!dropList.length) {
-      return deferred.resolve(dropList);
+    dropList = _.xor(liveList, members);
+    data = {
+      type: type,
+      dropList: dropList,
+      livingList: liveList
+    };
+    self.emit("report", data);
+    if(dropList.length) {
+      debug("found timeouts %o", dropList);
+      self.evict(type, dropList).then(function() {
+        deferred.resolve(data);
+      }, function(e) {
+        deferred.reject(e);
+      });
+    } else {
+      deferred.resolve(data);
     }
-    
-    deferred.resolve(self.evict(type, dropList));
   });
   return deferred.promise;
 };
 
 Client.prototype.evict = function (type, list) {
   var deferred = Q.defer(),
+      self = this,
       multi = this.heartbeatClient.multi();
 
   multi.sadd.apply(multi, [this.keyForDroplist(type)].concat(list));
   multi.srem.apply(multi, [this.keyForTypeSet(type)].concat(list));
-  multi.exec(function(e) {
-    if(e) {
-      return deferred.reject(e);
-    }
-    return deferred.resolve(list);
-  });
+  multi.exec(deferred.makeNodeResolver());
   return deferred.promise;
 };
 

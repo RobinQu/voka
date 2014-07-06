@@ -20,7 +20,7 @@ var Subscriber = function(options, callback) {
   
   this.looper = null;
   this.channels = [];
-  this.loopInterval = options.loopInterval || 300;
+  this.loopInterval = options.loopInterval / 1000 || 2;
   
   this.bootstrap(callback);
 };
@@ -31,6 +31,15 @@ Subscriber.prototype.bootstrap = function (callback) {
   debug("bootstrap");
   var self = this;
   this.connect().then(function() {
+    process.on("SIGINT", function() {
+      self.teardown();
+      process.exit();
+    });
+    process.on("SIGTERM", function() {
+      self.teardown();
+      process.exit();
+    });
+    
     return self.register().then(function() {
       // self.domain.run(function() {
       if(callback) {
@@ -47,9 +56,12 @@ Subscriber.prototype.bootstrap = function (callback) {
       callback(e);
     }
   });
+  
 };
 
 Subscriber.prototype.teardown = function (callback) {
+  debug("teardown");
+  this.unregister();
   this.disconnect(callback);
 };
 
@@ -115,8 +127,9 @@ Subscriber.prototype.loop = function() {
     listKeys.push(this.keyForQueue(this.name, this.channels[i]));
   }
   
-  debug("query list %s", listKeys);
+  debug("query list %s, block wait %s", listKeys, this.loopInterval);
   this.client.blpop(listKeys, this.loopInterval, function(e) {
+    process.nextTick(self.loop.bind(self));
     if(e) {
       return self._error(e);
     }
@@ -124,10 +137,11 @@ Subscriber.prototype.loop = function() {
         i, len, channel;
       
     for(i=0,len=args.length; i<len; i++) {
-      channel = args[i][0].split(".").pop();
-      self.handleMessage(channel, args[i][1]);
+      if(args[i]) {
+        channel = args[i][0].split(".").pop();
+        self.handleMessage(channel, args[i][1]);
+      }
     }
-    self.loop();
   });
   
 };

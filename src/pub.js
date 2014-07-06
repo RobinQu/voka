@@ -15,8 +15,15 @@ var Publisher = function(options, callback) {
     options = {};
   }
   options = options || {};
-  options.type = "publisher";
   Client.call(this, options);
+  options.type = "publisher";
+  
+  //wait for x seconds before publishing
+  this.delay = options.delay;
+  //wait for at least x subscribers
+  this.least = options.least;
+  // should reject to publish
+  this.shouldReject = true;
   //auto connect
   this.bootstrap(callback);
 };
@@ -27,17 +34,43 @@ Publisher.prototype.bootstrap = function (callback) {
   debug("bootstrap");
   var self = this;
   this.connect().then(function() {
-    if(callback) {
-      callback(null, self);
-    }
-    process.nextTick(function() {
-      self.checkSubscribers();
+    process.on("SIGINT", function() {
+      self.teardown();
+      process.exit();
+    });
+    process.on("SIGTERM", function() {
+      self.teardown();
+      process.exit();
+    });
+    return self.checkSubscribers().then(function(data) {
+      self.loopCheck();
+      return self.wait();
     });
   }).catch(function(e) {
-    if(callback) {
-      callback(e);
-    }
+    if(callback) { callback(e); }
+  }).done(function() {
+    if(callback) { callback(null, self); }
   });
+};
+
+Publisher.prototype.wait = function() {
+  if(this.delay) {
+    debug("delay %sms before publish", this.delay);
+    return Q.delay(this.delay);
+  }
+  var timer, self = this, deferred = Q.defer(), handler;
+  if(this.least) {
+    debug("wait for %s subscribers before publish", self.least);
+    handler = function(data) {
+      if(data.type === "subscriber" && data.livingList.length >= self.least) {
+        self.removeListener("report", handler);
+        deferred.resolve();
+      }
+    };
+    this.on("report", handler);
+    return deferred.promise;
+  }
+  return Q.fulfill();
 };
 
 Publisher.prototype.incrementMessageID = function (channel) {
@@ -47,11 +80,28 @@ Publisher.prototype.incrementMessageID = function (channel) {
 };
 
 Publisher.prototype.checkSubscribers = function () {
+  return this.liveCheck("subscriber");
+};
+
+Publisher.prototype.loopCheck = function () {
   var self = this;
-  this.liveCheck("subscriber").fin(function() {
-    setTimeout(self.checkSubscribers.bind(self), self.timeout * 1000);
-  }).catch(this._error).done(function(list) {
-    debug("timeouts: %o", list);
+  this.checkSubscribers().fin(function() {
+    setTimeout(self.loopCheck.bind(self), self.timeout * 1000);
+  }).done(function(data) {
+    debug("timeout: %o; living %o", data.dropList, data.livingList);
+    if(self.least) {
+      if(data.livingList.length < self.least) {
+        if(!self.shouldReject) {
+          self.shouldReject = true;
+          self.emit("least:unmatch", data.livingList.length);
+        }
+      } else {
+        if(self.shouldReject) {
+          self.shouldReject = false;
+          self.emit("least:match", data.livingList.length);
+        }
+      }
+    }
   });
 };
 
@@ -86,6 +136,10 @@ Publisher.prototype.teardown = function(callback) {
 };
 
 Publisher.prototype.publish = function (channel, message) {
+  if(this.shouldReject) {
+    this.emit("reject", channel, message);
+    return Q.reject();
+  }
   var self = this;
   assert(channel, "should provide a publish channel");
   debug("publish to %s", channel);
