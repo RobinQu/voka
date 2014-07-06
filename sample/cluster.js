@@ -1,11 +1,11 @@
 var cluster = require("cluster");
 
-var numsub = 10, i;
+var numsub = 5, i;
 
 if(cluster.isMaster) {
   for(i=0; i<numsub; i++) {
     cluster.fork({
-      // DEBUG: "*"
+      DEBUG: process.env.DEBUG
     });
   }
   require("./pub");

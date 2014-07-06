@@ -25,7 +25,7 @@ util.inherits(Publisher, Client);
 Publisher.prototype.bootstrap = function (callback) {
   debug("bootstrap");
   var self = this;
-  Q.ninvoke(this, "connect").then(function() {
+  this.connect().then(function() {
     self.domain.run(function() {
       if(callback) {
         callback(null, self);
@@ -63,13 +63,6 @@ Publisher.prototype.saveMessage = function (id, subscribers, channel, message) {
     multi.set(messageKey, message);
   }
   multi.exec(deferred.makeNodeResolver());
-  // multi.exec(function(e) {
-  //   console.log(arguments);
-  //   if(e) {
-  //     return deferred.reject(e);
-  //   }
-  //   deferred.resolve();
-  // });
   return deferred.promise;
 };
 

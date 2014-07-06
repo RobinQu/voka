@@ -2,8 +2,7 @@ var debug = require("debug")("sub"),
     Client = require("./client"),
     EE = require("events").EventEmitter,
     Q = require("q"),
-    util = require("util"),
-    short = require("shortid");
+    util = require("util");
 
 var Subscriber = function(options, callback) {
   if(!(this instanceof Subscriber)) {
@@ -17,7 +16,7 @@ var Subscriber = function(options, callback) {
   options = options || {};
   //auto connect
   Client.call(this, options);
-  this.name = options.name || short.generate();
+  
   this.emitter = new EE();
   this.looper = null;
   this.channels = [];
@@ -32,9 +31,8 @@ util.inherits(Subscriber, Client);
 Subscriber.prototype.bootstrap = function (callback) {
   debug("bootstrap");
   var self = this;
-  
-  self.connect(function() {
-    self.register().then(function() {
+  this.connect().then(function() {
+    return self.register().then(function() {
       self.domain.run(function() {
         if(callback) {
           callback(null, self);
@@ -44,10 +42,8 @@ Subscriber.prototype.bootstrap = function (callback) {
       process.nextTick(function() {
         self.loop();
       });
-    }, function(e) {
-      self.domain.emit(e);
-    }).catch(self.domain.intercept(callback));
-  });
+    });
+  }).catch(this.domain.intercept(callback));
   // var client = require("redis").createClient();
   // client.sadd(this.keyForSubscribers(), this.name, callback);
 };
