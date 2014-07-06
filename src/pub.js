@@ -15,6 +15,7 @@ var Publisher = function(options, callback) {
     options = {};
   }
   options = options || {};
+  options.type = "publisher";
   Client.call(this, options);
   //auto connect
   this.bootstrap(callback);
@@ -31,7 +32,10 @@ Publisher.prototype.bootstrap = function (callback) {
         callback(null, self);
       }
     });
-  }, this.domain.bind(callback));
+    process.nextTick(function() {
+      self.checkSubscribers();
+    });
+  }).catch(this.domain.intercept(callback));
 };
 
 Publisher.prototype.incrementMessageID = function (channel) {
@@ -40,6 +44,14 @@ Publisher.prototype.incrementMessageID = function (channel) {
   return Q.ninvoke(this.client, "incr", counterKey);
 };
 
+Publisher.prototype.checkSubscribers = function () {
+  var self = this;
+  this.liveCheck("subscriber").fin(function() {
+    setTimeout(self.checkSubscribers.bind(self), self.timeout * 1000);
+  }).catch(this._error).done(function(list) {
+    debug("timeouts: %o", list);
+  });
+};
 
 Publisher.prototype.getSubscribers = function () {
   var key = this.keyForSubscribers();

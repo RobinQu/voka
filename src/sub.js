@@ -14,14 +14,13 @@ var Subscriber = function(options, callback) {
     options = {};
   }
   options = options || {};
+  options.type = "subscriber";
   //auto connect
   Client.call(this, options);
   
-  this.emitter = new EE();
   this.looper = null;
   this.channels = [];
-  this.loopInterval = 200;
-  this.checkTimeout = 0;
+  this.loopInterval = options.loopInterval || 300;
   
   this.bootstrap(callback);
 };
@@ -44,38 +43,36 @@ Subscriber.prototype.bootstrap = function (callback) {
       });
     });
   }).catch(this.domain.intercept(callback));
-  // var client = require("redis").createClient();
-  // client.sadd(this.keyForSubscribers(), this.name, callback);
 };
 
 Subscriber.prototype.teardown = function (callback) {
   this.disconnect(callback);
 };
 
-Subscriber.prototype.subscribe = Subscriber.prototype.on = function (channel, callback) {
-  debug("subscribe %s", channel);
+Subscriber.prototype.subscribe = function (channel, callback) {
+  debug("subscribe %s", channel);  
   if(this.channels.indexOf(channel) === -1) {
     this.channels.push(channel);
+    if(this.channels.length === 1) {//from zero to 1
+      process.nextTick(this.loop.bind(this));
+    }
+    
   }
-  this.emitter.on(this.channel(channel), callback);
+  this.on(this.channel(channel), callback);
   return this.register();
 };
 
-Subscriber.prototype.unsubscriber = Subscriber.prototype.off = function(channel, callback) {
-  var evt = channel + ":message",
+Subscriber.prototype.unsubscriber = function(channel, callback) {
+  var evt = this.channel(channel),
       count;
   
-  this.emitter.removeListener(evt, callback);
-  count = EE.listenerCount(this.emitter ,evt);
+  this.removeListener(evt, callback);
+  count = EE.listenerCount(this ,evt);
   if(!count) {
     //remove from channel records
     this.channels.split(this.channels.indexIf(channel), 1);
     return this.unregister();
   }
-};
-
-Subscriber.prototype.loop = function() {
-  this.looper = setTimeout(this._loop.bind(this), this.loopInterval);
 };
 
 Subscriber.prototype.register = function() {
@@ -93,30 +90,36 @@ Subscriber.prototype.handleMessage = function (channel, id) {
       self = this,
       key = this.keyForMessage(this.name, id);
   multi.get(key).del(key).exec(this.domain.intercept(function(replies) {
-    debug("message got on channel '%s'", channel);
+    debug("message got on channel '%s' with id %s", channel, id);
     var message = replies[0];
-    self.emitter.emit(self.channel(channel), message);
+    self.emit(self.channel(channel), message);
   }));
 };
 
-Subscriber.prototype._loop = function() {
+Subscriber.prototype.loop = function() {
   debug("loop");
+  if(!this.channels.length) {
+    return debug("no channel subscribed");
+  }
   var multi = this.client.multi(),
       i, len, listKeys = [], self = this;
+      
   for(i=0,len=this.channels.length; i<len; i++) { 
     listKeys.push(this.keyForQueue(this.name, this.channels[i]));
   }
+  
   debug("query list %s", listKeys);
-  this.client.blpop(listKeys, this.checkTimeout, this.domain.intercept(function() {
+  this.client.blpop(listKeys, this.loopInterval, this.domain.intercept(function() {
     var args = Array.prototype.slice.call(arguments), 
         i, len, channel;
-        
+      
     for(i=0,len=args.length; i<len; i++) {
       channel = args[i][0].split(".").pop();
       self.handleMessage(channel, args[i][1]);
     }
     self.loop();
   }));
+  
 };
 
 
