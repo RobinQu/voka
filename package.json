@@ -1,6 +1,6 @@
 {
   "name": "voka",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Reliable Pub-Sub borker using Redis and Nodejs",
   "main": "src/voka.js",
   "scripts": {

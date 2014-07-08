@@ -33,6 +33,22 @@ voka.publisher(function(e, pub) {
 });
 ```
 
+Create a hub that can send and recieve message
+
+```
+voka.hub(function(e, hub) {
+  //publish
+  hub.publish("foo", "bar");
+  //subscribe
+  
+  hub.subscribe("foo", function(message) {
+    //messages won't be sent to the hub itself
+    //so no `bar` will get here
+  });
+});
+```
+
+
 
 ## Redis
 
