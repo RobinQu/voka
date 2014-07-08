@@ -111,8 +111,13 @@ Subscriber.prototype.handleMessage = function (channel, id) {
       return self._error(e);
     }
     debug("message got on channel '%s' with id %s", channel, id);
-    var message = self.deserializer(replies[0]);
-    if(filter && filter.call(this, message)) {
+    var message = replies[0];
+    try {
+      message = self.deserializer();
+    } catch(ex) {}
+    if(this.filter && !this.filter(message)) {
+      debug("message dropped by filter");
+    } else {
       self.emit(self.channel(channel), message);
     }
   });
@@ -123,14 +128,17 @@ Subscriber.prototype.loop = function() {
   if(!this.channels.length) {
     return debug("no channel subscribed");
   }
-  var multi = this.client.multi(),
-      i, len, listKeys = [], self = this;
+  var /*multi = this.client.multi(),*/
+      listKey, i, len, listKeys = [], self = this;
       
   for(i=0,len=this.channels.length; i<len; i++) { 
-    listKeys.push(this.keyForQueue(this.name, this.channels[i]));
+    listKey = this.keyForQueue(this.name, this.channels[i]);
+    listKeys.push(listKey);
+    // multi.rpoplpush(listKey, listKey);
   }
   
   debug("query list %s, block wait %s", listKeys, this.loopInterval);
+  
   this.client.blpop(listKeys, this.loopInterval, function(e) {
     process.nextTick(self.loop.bind(self));
     if(e) {
@@ -138,7 +146,6 @@ Subscriber.prototype.loop = function() {
     }
     var args = Array.prototype.slice.call(arguments, 1), 
         i, len, channel;
-      
     for(i=0,len=args.length; i<len; i++) {
       if(args[i]) {
         channel = args[i][0].split(".").pop();

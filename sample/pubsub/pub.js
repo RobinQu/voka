@@ -1,6 +1,6 @@
-var voka = require("..");
+var voka = require("../..");
 
-voka.publisher({ least: 3 }, function(e, pub) {
+voka.publisher({ least: 2 }, function(e, pub) {
   if(e) {
     console.log(e);
     process.exit();
@@ -28,4 +28,3 @@ voka.publisher({ least: 3 }, function(e, pub) {
   });
   
 });
-

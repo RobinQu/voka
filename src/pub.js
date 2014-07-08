@@ -15,8 +15,9 @@ var Publisher = function(options, callback) {
     options = {};
   }
   options = options || {};
-  Client.call(this, options);
   options.type = "publisher";
+  Client.call(this, options);
+  
   
   //blacklist
   this.blacklist = options.blacklist || [];
@@ -25,7 +26,7 @@ var Publisher = function(options, callback) {
   //wait for at least x subscribers
   this.least = options.least;
   // should reject to publish
-  this.shouldReject = true;
+  this.shouldReject = !!(this.delay || this.least);
   //auto connect
   this.bootstrap(callback);
   //content serializer
@@ -148,16 +149,21 @@ Publisher.prototype.publish = function (channel, message) {
   var self = this;
   assert(channel, "should provide a publish channel");
   debug("publish to %s", channel);
+  
   return self.getSubscribers().then(function(subscribers) {
     if(self.blacklist.length) {
       debug("handle blacklist %o", self.blacklist);
       subscribers = subscribers.filter(function(s) {
-        return self.blacklist.indexOf(s) === 0;
+        return self.blacklist.indexOf(s) === -1;
       });
     }
-    return self.incrementMessageID(channel).then(function(id) {
-      return self.saveMessage(id, subscribers, channel, message);
-    });
+    if(subscribers.length) {
+      return self.incrementMessageID(channel).then(function(id) {
+        return self.saveMessage(id, subscribers, channel, message);
+      });
+    } {
+      return Q.fulfill();
+    }
   });
 };
 

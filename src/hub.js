@@ -2,13 +2,14 @@ var reids = require("redis"),
     debug = require("debug")("hub"),
     assert = require("assert"),
     Q = require("q"),
-    Publisher = require("./publisher"),
-    Subscriber = require("./subscriber"),
+    Publisher = require("./pub"),
+    Subscriber = require("./sub"),
     short = require("shortid"),
     util = require("util");
 
 
 var MessageFilter = function(hubID, message) {
+  console.log(hubId, message);
   if(message._hub && message._hub == hubID) {
     debug("drop message form the hub itself(%s)", hubID);
     return false;
@@ -17,9 +18,15 @@ var MessageFilter = function(hubID, message) {
 };
 
 var Hub = function(options, callback) {
-  if(!(this instanceof Hub)) {
-    return new Hub(opitons, callback);
+  if(typeof options === "function") {
+    callback = options;
+    options = {};
   }
+  
+  if(!(this instanceof Hub)) {
+    return new Hub(options, callback);
+  }
+  
   var self = this;
   this.name = short.generate();
   
@@ -32,19 +39,22 @@ var Hub = function(options, callback) {
     //setup for publisher
     delete options.filter;
     options.name = short.generate();
-    options.client = pub.client;
-    options.heartbeatClient = pub.heartbeatClient;
+    options.client = sub.client;
+    options.heartbeatClient = sub.heartbeatClient;
     options.blacklist = [sub.name];
     return Q.nfcall(Publisher, options);
   }).catch(callback).done(function(pub) {
     self.publisher = pub;
+    
+    self.publish = self.publisher.publish.bind(self.publisher);
+    self.subscribe = self.subscriber.subscribe.bind(self.subscriber);
+    
+    
     if(callback) {
       callback(null, self);
     }
   });
   
-  this.publish = this.publisher.publish.bind(this.publisher);
-  this.subscribe = this.subscriber.subscribe.bind(this.subscriber);
 };
 
 module.exports = Hub;

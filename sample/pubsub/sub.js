@@ -1,4 +1,4 @@
-var voka = require("..");
+var voka = require("../..");
 
 voka.subscriber(function(e, sub) {
   sub.subscribe("time", function(date) {

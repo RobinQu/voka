@@ -2,6 +2,8 @@ module.exports = {
   
   publisher: require("./pub"),
   
-  subscriber: require("./sub")
+  subscriber: require("./sub"),
+  
+  hub: require("./hub")
   
 };
