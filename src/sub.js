@@ -18,10 +18,11 @@ var Subscriber = function(options, callback) {
   //auto connect
   Client.call(this, options);
   
+  this.deserializer = options.deserializer || JSON.parse;
+  this.filter = options.filter || function() { return true; };
   this.looper = null;
   this.channels = [];
   this.loopInterval = options.loopInterval / 1000 || 2;
-  
   this.bootstrap(callback);
 };
 
@@ -110,8 +111,10 @@ Subscriber.prototype.handleMessage = function (channel, id) {
       return self._error(e);
     }
     debug("message got on channel '%s' with id %s", channel, id);
-    var message = replies[0];
-    self.emit(self.channel(channel), message);
+    var message = self.deserializer(replies[0]);
+    if(filter && filter.call(this, message)) {
+      self.emit(self.channel(channel), message);
+    }
   });
 };
 

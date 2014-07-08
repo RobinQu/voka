@@ -18,7 +18,8 @@ var Client = function(options) {
   this.timeout = (options.timeout / 1000) || 2;
   this.heartbeatInterval = options.heartbeatInterval || 500;
   this._error = this.emitError.bind(this);
-  
+  this.heartbeatClient = options.heartbeatClient;
+  this.client = options.client;
 };
 
 util.inherits(Client, EE);
@@ -26,9 +27,10 @@ util.inherits(Client, EE);
 Client.prototype.connect = function () {
   debug("connect");
   var self = this;
+  
   return Q.all([
-    this.createClient(this.redisOpts),
-    this.createClient(this.redisOpts)
+    this.client ? Q.fulfill(this.client) : this.createClient(this.redisOpts),
+    this.heartbeatClient ? Q.fulfill(this.heartbeatClient) : this.createClient(this.redisOpts)
   ]).then(function(clients) {
     self.client = clients[0];
     self.heartbeatClient = clients[1];

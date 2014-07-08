@@ -18,6 +18,8 @@ var Publisher = function(options, callback) {
   Client.call(this, options);
   options.type = "publisher";
   
+  //blacklist
+  this.blacklist = options.blacklist || [];
   //wait for x seconds before publishing
   this.delay = options.delay;
   //wait for at least x subscribers
@@ -26,6 +28,8 @@ var Publisher = function(options, callback) {
   this.shouldReject = true;
   //auto connect
   this.bootstrap(callback);
+  //content serializer
+  this.serializer = options.serializer || JSON.stringify;
 };
 
 util.inherits(Publisher, Client);
@@ -125,7 +129,7 @@ Publisher.prototype.saveMessage = function (id, subscribers, channel, message) {
     debug("save message %s to %s, with id %s", messageKey, listKey, id);
     //push message id to channel queue in the subscriber's scope
     multi.rpush(listKey, id);
-    multi.set(messageKey, message);
+    multi.set(messageKey, this.serializer(message));
   }
   multi.exec(deferred.makeNodeResolver());
   return deferred.promise;
@@ -145,11 +149,16 @@ Publisher.prototype.publish = function (channel, message) {
   assert(channel, "should provide a publish channel");
   debug("publish to %s", channel);
   return self.getSubscribers().then(function(subscribers) {
+    if(self.blacklist.length) {
+      debug("handle blacklist %o", self.blacklist);
+      subscribers = subscribers.filter(function(s) {
+        return self.blacklist.indexOf(s) === 0;
+      });
+    }
     return self.incrementMessageID(channel).then(function(id) {
       return self.saveMessage(id, subscribers, channel, message);
     });
   });
 };
-
 
 module.exports = Publisher;
