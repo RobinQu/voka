@@ -7,9 +7,11 @@ voka.publisher(function(e, pub) {
   }
   
   setInterval(function() {
+    var time = Date.now();
+    console.log("pub %s says %s", pub.name, time);
     pub.publish("chat", {
       name: pub.name,
-      time: Date.now()
+      time: time
     });
   }, 1000 * 2);
   

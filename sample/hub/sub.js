@@ -7,7 +7,7 @@ voka.subscriber(function(e, sub) {
   }
   
   sub.subscribe("chat", function(message) {
-    console.log(sub.name, " receives: ", message);
+    console.log("sub %s receieves %s ",sub.name, JSON.stringify(message));
   });
   
 });

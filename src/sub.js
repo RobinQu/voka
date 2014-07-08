@@ -113,7 +113,7 @@ Subscriber.prototype.handleMessage = function (channel, id) {
     debug("message got on channel '%s' with id %s", channel, id);
     var message = replies[0];
     try {
-      message = self.deserializer();
+      message = self.deserializer(message);
     } catch(ex) {}
     if(this.filter && !this.filter(message)) {
       debug("message dropped by filter");

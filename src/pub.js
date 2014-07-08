@@ -130,7 +130,10 @@ Publisher.prototype.saveMessage = function (id, subscribers, channel, message) {
     debug("save message %s to %s, with id %s", messageKey, listKey, id);
     //push message id to channel queue in the subscriber's scope
     multi.rpush(listKey, id);
-    multi.set(messageKey, this.serializer(message));
+    try {
+      message = this.serializer(message);
+    } catch(e) {}
+    multi.set(messageKey, message);
   }
   multi.exec(deferred.makeNodeResolver());
   return deferred.promise;

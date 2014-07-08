@@ -101,7 +101,7 @@ Client.prototype.heartbeat = function () {
   deferred = Q.defer();
   multi = this.heartbeatClient.multi();
   key = this.keyForHeartbeat();
-  debug("heartbeat %s", key);
+  // debug("heartbeat %s", key);
   multi.set(key, Date.now());
   multi.expire(key, this.timeout);
   multi.exec(function(e) {
