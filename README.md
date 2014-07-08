@@ -40,15 +40,12 @@ voka.hub(function(e, hub) {
   //publish
   hub.publish("foo", "bar");
   //subscribe
-  
   hub.subscribe("foo", function(message) {
     //messages won't be sent to the hub itself
     //so no `bar` will get here
   });
 });
 ```
-
-
 
 ## Redis
 
@@ -123,7 +120,7 @@ pub.on("report", function(data) {
 ## Producer & consumer
 
 * multiple `subscirber`s can be assigned with an identical name for load balance
-* multiple `publisher`'s can be assigned with an identical name for more horsepower
+* multiple `publisher`s can be assigned with an identical name for more horsepower
 
 ## Notes
 
