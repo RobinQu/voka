@@ -22,7 +22,7 @@ var Subscriber = function(options, callback) {
   this.filter = options.filter || function() { return true; };
   this.looper = null;
   this.channels = [];
-  this.loopInterval = options.loopInterval / 1000 || 2;
+  this.loopInterval = options.loopInterval / 1000 || 1;
   this.bootstrap(callback);
 };
 
@@ -42,6 +42,7 @@ Subscriber.prototype.bootstrap = function (callback) {
     });
     
     return self.register().then(function() {
+      self.emit("ready");
       // self.domain.run(function() {
       if(callback) {
         callback(null, self);
@@ -53,6 +54,7 @@ Subscriber.prototype.bootstrap = function (callback) {
       });
     });
   }).catch(function(e) {
+    self.emit("error", e);
     if(callback) {
       callback(e);
     }

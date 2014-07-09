@@ -53,8 +53,10 @@ Publisher.prototype.bootstrap = function (callback) {
       return self.wait();
     });
   }).catch(function(e) {
+    self.emit("error", e);
     if(callback) { callback(e); }
   }).done(function() {
+    self.emit("ready");
     if(callback) { callback(null, self); }
   });
 };

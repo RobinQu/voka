@@ -39,11 +39,12 @@ Client.prototype.connect = function () {
 };
 
 Client.prototype.createClient = function (options) {
-  var deferred = Q.defer(), client;
+  var deferred = Q.defer(), client, self = this;
  client = redis.createClient(options.port || 6379, options.host || "localhost", {
     "auth_pass": options.authpass
   });
   client.once("connect", function() {
+    self.emit("connect");
     deferred.resolve(client);
   });
   client.once("error", function(e) {
