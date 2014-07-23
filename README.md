@@ -2,6 +2,8 @@
 
 Reliabe pub-sub broker, using Redis and Nodejs
 
+[![Build Status](https://travis-ci.org/RobinQu/voka.svg?branch=master)](https://travis-ci.org/RobinQu/voka)
+
 
 ## TL;DR
 
@@ -116,6 +118,8 @@ pub.on("report", function(data) {
 
 });
 ```
+
+See more at [heartbeat.md](/docs/heartbeat.md)
 
 ## Producer & consumer
 
