@@ -20,6 +20,9 @@ var Client = function(options) {
   this._error = this.emitError.bind(this);
   this.heartbeatClient = options.heartbeatClient;
   this.client = options.client;
+  
+  //message resolver
+  this.resolver = options.resolver || require("./json_resolver");
 };
 
 util.inherits(Client, EE);
@@ -98,14 +101,10 @@ Client.prototype.emitError = function (e) {
 };
 
 Client.prototype.heartbeat = function () {
-  var i, len, multi, key, deferred, self = this;
+  var i, len, key, deferred, self = this;
   deferred = Q.defer();
-  multi = this.heartbeatClient.multi();
   key = this.keyForHeartbeat();
-  // debug("heartbeat %s", key);
-  multi.set(key, Date.now());
-  multi.expire(key, this.timeout);
-  multi.exec(function(e) {
+  this.heartbeatClient.setex(key, this.timeout, Date.now(), function (e) {
     setTimeout(self.heartbeat.bind(self), self.heartbeatInterval);
     if(e) {
       self._error(e);

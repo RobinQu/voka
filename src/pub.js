@@ -17,8 +17,6 @@ var Publisher = function(options, callback) {
   options = options || {};
   options.type = "publisher";
   Client.call(this, options);
-  
-  
   //blacklist
   this.blacklist = options.blacklist || [];
   //wait for x seconds before publishing
@@ -29,8 +27,6 @@ var Publisher = function(options, callback) {
   this.shouldReject = !!(this.delay || this.least);
   //auto connect
   this.bootstrap(callback);
-  //content serializer
-  this.serializer = options.serializer;
 };
 
 util.inherits(Publisher, Client);
@@ -123,6 +119,10 @@ Publisher.prototype.saveMessage = function (id, subscribers, channel, message) {
   var deferred = Q.defer(), i, len, multi, messageKey, listKey, counterKey;
   debug("save message to %d subscriber(s): %o", subscribers.length, subscribers);
   multi = this.client.multi();
+  try {
+    message = this.resolver.serialize(message);
+    console.log(message);
+  } catch(e) {}
   for(i=0,len=subscribers.length; i<len; i++) {
     //scoped by subscriber's name
     messageKey = this.keyForMessage(subscribers[i], id);
@@ -132,9 +132,6 @@ Publisher.prototype.saveMessage = function (id, subscribers, channel, message) {
     debug("save message %s to %s, with id %s", messageKey, listKey, id);
     //push message id to channel queue in the subscriber's scope
     multi.rpush(listKey, id);
-    try {
-      message = this.serializer(message);
-    } catch(e) {}
     multi.set(messageKey, message);
   }
   multi.exec(deferred.makeNodeResolver());

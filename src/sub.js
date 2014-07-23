@@ -17,8 +17,6 @@ var Subscriber = function(options, callback) {
   options.type = "subscriber";
   //auto connect
   Client.call(this, options);
-  
-  this.deserializer = options.deserializer;
   this.filter = options.filter || function() { return true; };
   this.looper = null;
   this.channels = [];
@@ -115,8 +113,10 @@ Subscriber.prototype.handleMessage = function (channel, id) {
     debug("message got on channel '%s' with id %s", channel, id);
     var message = replies[0];
     try {
-      message = self.deserializer(message);
-    } catch(ex) {}
+      message = self.resolver.deserialize(message);
+    } catch(ex) {
+      console.log(ex);
+    }
     if(this.filter && !this.filter(message)) {
       debug("message dropped by filter");
       return;
