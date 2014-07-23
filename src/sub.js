@@ -18,7 +18,7 @@ var Subscriber = function(options, callback) {
   //auto connect
   Client.call(this, options);
   
-  this.deserializer = options.deserializer || JSON.parse;
+  this.deserializer = options.deserializer;
   this.filter = options.filter || function() { return true; };
   this.looper = null;
   this.channels = [];
@@ -119,9 +119,10 @@ Subscriber.prototype.handleMessage = function (channel, id) {
     } catch(ex) {}
     if(this.filter && !this.filter(message)) {
       debug("message dropped by filter");
-    } else {
-      self.emit(self.channel(channel), message);
+      return;
     }
+    debug("emit message on channel '%s', size %s", channel, message.length);
+    self.emit(self.channel(channel), message);
   });
 };
 

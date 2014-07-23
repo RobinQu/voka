@@ -30,7 +30,7 @@ var Publisher = function(options, callback) {
   //auto connect
   this.bootstrap(callback);
   //content serializer
-  this.serializer = options.serializer || JSON.stringify;
+  this.serializer = options.serializer;
 };
 
 util.inherits(Publisher, Client);
