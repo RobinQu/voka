@@ -10,6 +10,7 @@ var debug = require("debug")("client"),
 var Client = function(options) {
   EE.call(this);
   
+  this.uuid = short.generate();
   this.name = options.name || short.generate();
   this.type = options.type || "client";
   this.namespace = (options.namespace || "voka").split(".");

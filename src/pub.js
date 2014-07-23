@@ -121,7 +121,6 @@ Publisher.prototype.saveMessage = function (id, subscribers, channel, message) {
   multi = this.client.multi();
   try {
     message = this.resolver.serialize(message);
-    console.log(message);
   } catch(e) {}
   for(i=0,len=subscribers.length; i<len; i++) {
     //scoped by subscriber's name
