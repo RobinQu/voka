@@ -62,7 +62,7 @@ Subscriber.prototype.bootstrap = function (callback) {
 
 Subscriber.prototype.teardown = function (callback) {
   debug("teardown");
-  this.unregister();
+  this.unsubscribe();
   this.disconnect(callback);
 };
 
@@ -79,12 +79,22 @@ Subscriber.prototype.subscribe = function (channel, callback) {
   return this.register();
 };
 
-Subscriber.prototype.unsubscriber = function(channel, callback) {
+Subscriber.prototype.unsubscribe = function(channel, callback) {
+  if(!channel) {//channel is not given, then delete all subscriber info
+    this.removeAllListeners();
+    this.channels.length = 0;
+    return this.unregister();
+  }
+  
   var evt = this.channel(channel),
       count;
   
-  this.removeListener(evt, callback);
-  count = EE.listenerCount(this ,evt);
+  if(callback) {
+    this.removeListener(evt, callback);
+  } else {
+    this.removeAllListeners(evt);
+  }
+  count = EE.listenerCount(this, evt);
   if(!count) {
     //remove from channel records
     this.channels.split(this.channels.indexIf(channel), 1);
@@ -112,6 +122,7 @@ Subscriber.prototype.handleMessage = function (channel, id) {
     }
     debug("message got on channel '%s' with id %s", channel, id);
     var message = replies[0];
+    debug("emit message on channel '%s', size %s", channel, message.length);
     try {
       message = self.resolver.deserialize(message);
     } catch(ex) {
@@ -121,7 +132,6 @@ Subscriber.prototype.handleMessage = function (channel, id) {
       debug("message dropped by filter");
       return;
     }
-    debug("emit message on channel '%s', size %s", channel, message.length);
     self.emit(self.channel(channel), message);
   });
 };
