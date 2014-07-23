@@ -40,7 +40,7 @@ Client.prototype.connect = function () {
 
 Client.prototype.createClient = function (options) {
   var deferred = Q.defer(), client, self = this;
- client = redis.createClient(options.port || 6379, options.host || "localhost", {
+  client = redis.createClient(options.port || 6379, options.host || "localhost", {
     "auth_pass": options.authpass
   });
   client.once("connect", function() {
@@ -98,7 +98,7 @@ Client.prototype.emitError = function (e) {
 };
 
 Client.prototype.heartbeat = function () {
-  var i,len, multi, key, deferred, self = this;
+  var i, len, multi, key, deferred, self = this;
   deferred = Q.defer();
   multi = this.heartbeatClient.multi();
   key = this.keyForHeartbeat();

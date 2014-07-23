@@ -154,7 +154,6 @@ Publisher.prototype.publish = function (channel, message) {
   var self = this;
   assert(channel, "should provide a publish channel");
   debug("publish to %s", channel);
-  
   return self.getSubscribers().then(function(subscribers) {
     if(self.blacklist.length) {
       debug("handle blacklist %o", self.blacklist);
